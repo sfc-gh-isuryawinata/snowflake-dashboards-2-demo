@@ -1,0 +1,162 @@
+{
+  "title": "Global Sales Performance",
+  "widgets": {
+    "header": {
+      "id": "header",
+      "type": "markdown",
+      "title": "About",
+      "content": "## Global Sales Performance\nLive on `DASH_DEMO.SALES.ORDERS` (semantic view `DASH_DEMO.SALES.SALES_SV`). FY2026 vs FY2025. Click a region bar to explore. Ask follow-ups in CoWork, e.g. *Why did APAC drop in H2 2026?*"
+    },
+    "revenue-kpi": {
+      "id": "revenue-kpi",
+      "type": "scorecard",
+      "title": "Revenue 2026 (vs 2025)",
+      "source": { "sql": "SELECT SUM(IFF(order_date >= '2026-01-01', revenue, 0)) AS VALUE, DIV0(SUM(IFF(order_date >= '2026-01-01', revenue, 0)), SUM(IFF(order_date < '2026-01-01', revenue, 0))) - 1 AS DIFF FROM DASH_DEMO.SALES.ORDERS" }
+    },
+    "margin-kpi": {
+      "id": "margin-kpi",
+      "type": "scorecard",
+      "title": "Gross Margin % 2026",
+      "source": { "sql": "SELECT DIV0(SUM(IFF(order_date >= '2026-01-01', revenue - cost, 0)), SUM(IFF(order_date >= '2026-01-01', revenue, 0))) AS VALUE, DIV0(SUM(IFF(order_date >= '2026-01-01', revenue - cost, 0)), SUM(IFF(order_date >= '2026-01-01', revenue, 0))) - DIV0(SUM(IFF(order_date < '2026-01-01', revenue - cost, 0)), SUM(IFF(order_date < '2026-01-01', revenue, 0))) AS DIFF FROM DASH_DEMO.SALES.ORDERS" }
+    },
+    "orders-kpi": {
+      "id": "orders-kpi",
+      "type": "scorecard",
+      "title": "Orders 2026",
+      "source": { "sql": "SELECT COUNT_IF(order_date >= '2026-01-01') AS VALUE, DIV0(COUNT_IF(order_date >= '2026-01-01'), COUNT_IF(order_date < '2026-01-01')) - 1 AS DIFF FROM DASH_DEMO.SALES.ORDERS" }
+    },
+    "units-kpi": {
+      "id": "units-kpi",
+      "type": "scorecard",
+      "title": "Units 2026",
+      "source": { "sql": "SELECT SUM(IFF(order_date >= '2026-01-01', units, 0)) AS VALUE, DIV0(SUM(IFF(order_date >= '2026-01-01', units, 0)), SUM(IFF(order_date < '2026-01-01', units, 0))) - 1 AS DIFF FROM DASH_DEMO.SALES.ORDERS" }
+    },
+    "trend-by-region": {
+      "id": "trend-by-region",
+      "type": "chart",
+      "title": "Monthly revenue by region",
+      "source": { "sql": "SELECT DATE_TRUNC('month', order_date) AS MONTH, region AS REGION, SUM(revenue) AS REVENUE FROM DASH_DEMO.SALES.ORDERS GROUP BY 1, 2 ORDER BY 1" },
+      "vega": {
+        "mark": { "type": "line", "point": true },
+        "encoding": {
+          "x": { "field": "MONTH", "type": "temporal", "title": "Month" },
+          "y": { "field": "REVENUE", "type": "quantitative", "title": "Revenue", "axis": { "format": "~s" } },
+          "color": { "field": "REGION", "type": "nominal", "title": "Region" },
+          "tooltip": [{ "field": "MONTH", "type": "temporal" }, { "field": "REGION" }, { "field": "REVENUE", "type": "quantitative", "format": ",.0f" }]
+        }
+      }
+    },
+    "rev-by-product": {
+      "id": "rev-by-product",
+      "type": "chart",
+      "title": "Revenue by product line",
+      "source": { "sql": "SELECT product_line AS PRODUCT_LINE, SUM(revenue) AS REVENUE FROM DASH_DEMO.SALES.ORDERS GROUP BY 1 ORDER BY 2 DESC" },
+      "vega": {
+        "mark": "bar",
+        "encoding": {
+          "y": { "field": "PRODUCT_LINE", "type": "nominal", "sort": "-x", "title": null },
+          "x": { "field": "REVENUE", "type": "quantitative", "title": "Revenue", "axis": { "format": "~s" } },
+          "tooltip": [{ "field": "PRODUCT_LINE" }, { "field": "REVENUE", "type": "quantitative", "format": ",.0f" }]
+        }
+      }
+    },
+    "top-customers": {
+      "id": "top-customers",
+      "type": "table",
+      "title": "Top 10 customers (2026)",
+      "source": { "sql": "SELECT customer_name AS CUSTOMER, segment AS SEGMENT, ROUND(SUM(revenue), 0) AS REVENUE, ROUND(DIV0(SUM(revenue - cost), SUM(revenue)) * 100, 1) AS MARGIN_PCT FROM DASH_DEMO.SALES.ORDERS WHERE order_date >= '2026-01-01' GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 10" },
+      "columns": ["CUSTOMER", "SEGMENT", "REVENUE", "MARGIN_PCT"]
+    },
+    "rev-by-region": {
+      "id": "rev-by-region",
+      "type": "chart",
+      "title": "Revenue by region and year",
+      "source": { "sql": "SELECT region AS REGION, TO_VARCHAR(YEAR(order_date)) AS YEAR, SUM(revenue) AS REVENUE FROM DASH_DEMO.SALES.ORDERS GROUP BY 1, 2 ORDER BY 1, 2" },
+      "vega": {
+        "mark": "bar",
+        "encoding": {
+          "x": { "field": "REGION", "type": "nominal", "title": null },
+          "xOffset": { "field": "YEAR" },
+          "y": { "field": "REVENUE", "type": "quantitative", "title": "Revenue", "axis": { "format": "~s" } },
+          "color": { "field": "YEAR", "type": "nominal", "title": "Year" },
+          "tooltip": [{ "field": "REGION" }, { "field": "YEAR" }, { "field": "REVENUE", "type": "quantitative", "format": ",.0f" }]
+        }
+      }
+    },
+    "country-heatmap": {
+      "id": "country-heatmap",
+      "type": "chart",
+      "title": "Revenue heatmap: country x quarter",
+      "source": { "sql": "SELECT country AS COUNTRY, YEAR(order_date) || '-Q' || QUARTER(order_date) AS QUARTER, SUM(revenue) AS REVENUE FROM DASH_DEMO.SALES.ORDERS GROUP BY 1, 2 ORDER BY 2" },
+      "vega": {
+        "mark": "rect",
+        "encoding": {
+          "x": { "field": "QUARTER", "type": "ordinal", "title": null },
+          "y": { "field": "COUNTRY", "type": "nominal", "title": null },
+          "color": { "field": "REVENUE", "type": "quantitative", "title": "Revenue" },
+          "tooltip": [{ "field": "COUNTRY" }, { "field": "QUARTER" }, { "field": "REVENUE", "type": "quantitative", "format": ",.0f" }]
+        }
+      }
+    },
+    "product-area": {
+      "id": "product-area",
+      "type": "chart",
+      "title": "Revenue mix by product line over time",
+      "source": { "sql": "SELECT DATE_TRUNC('month', order_date) AS MONTH, product_line AS PRODUCT_LINE, SUM(revenue) AS REVENUE FROM DASH_DEMO.SALES.ORDERS GROUP BY 1, 2 ORDER BY 1" },
+      "vega": {
+        "mark": "area",
+        "encoding": {
+          "x": { "field": "MONTH", "type": "temporal", "title": "Month" },
+          "y": { "field": "REVENUE", "type": "quantitative", "stack": "zero", "title": "Revenue", "axis": { "format": "~s" } },
+          "color": { "field": "PRODUCT_LINE", "type": "nominal", "title": "Product line" }
+        }
+      }
+    },
+    "margin-by-product": {
+      "id": "margin-by-product",
+      "type": "chart",
+      "title": "Gross margin % by product line",
+      "source": { "sql": "SELECT product_line AS PRODUCT_LINE, DIV0(SUM(revenue - cost), SUM(revenue)) AS MARGIN_PCT FROM DASH_DEMO.SALES.ORDERS GROUP BY 1 ORDER BY 2 DESC" },
+      "vega": {
+        "mark": "bar",
+        "encoding": {
+          "x": { "field": "PRODUCT_LINE", "type": "nominal", "sort": "-y", "title": null },
+          "y": { "field": "MARGIN_PCT", "type": "quantitative", "title": "Margin %", "axis": { "format": ".0%" } },
+          "tooltip": [{ "field": "PRODUCT_LINE" }, { "field": "MARGIN_PCT", "type": "quantitative", "format": ".1%" }]
+        }
+      }
+    }
+  },
+  "tabs": [
+    {
+      "id": "overview",
+      "label": "Overview",
+      "layout": [
+        { "i": "header", "x": 0, "y": 0, "w": 12, "h": 1 },
+        { "i": "revenue-kpi", "x": 0, "y": 1, "w": 3, "h": 2 },
+        { "i": "margin-kpi", "x": 3, "y": 1, "w": 3, "h": 2 },
+        { "i": "orders-kpi", "x": 6, "y": 1, "w": 3, "h": 2 },
+        { "i": "units-kpi", "x": 9, "y": 1, "w": 3, "h": 2 },
+        { "i": "trend-by-region", "x": 0, "y": 3, "w": 8, "h": 4 },
+        { "i": "rev-by-product", "x": 8, "y": 3, "w": 4, "h": 4 },
+        { "i": "top-customers", "x": 0, "y": 7, "w": 12, "h": 4 }
+      ]
+    },
+    {
+      "id": "regional",
+      "label": "Regional",
+      "layout": [
+        { "i": "rev-by-region", "x": 0, "y": 0, "w": 5, "h": 5 },
+        { "i": "country-heatmap", "x": 5, "y": 0, "w": 7, "h": 5 }
+      ]
+    },
+    {
+      "id": "product",
+      "label": "Product",
+      "layout": [
+        { "i": "product-area", "x": 0, "y": 0, "w": 8, "h": 5 },
+        { "i": "margin-by-product", "x": 8, "y": 0, "w": 4, "h": 5 }
+      ]
+    }
+  ]
+}
